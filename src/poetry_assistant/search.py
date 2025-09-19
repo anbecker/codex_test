@@ -8,7 +8,10 @@ from typing import List, Optional, Sequence
 
 from .database import PoetryDatabase
 from .models import SearchResult
-from .phonetics import similarity, tokens
+from .phonetics import Pronunciation, similarity, tokens
+
+
+MAX_PRECOMPUTED_RHYME_KEY = 4
 
 
 @dataclass
@@ -99,8 +102,11 @@ class SearchEngine:
         if options.pattern_type == "both":
             return row["terminal_both"]
         if options.pattern_type == "rhyme":
-            column = f"rhyme_key_{syllables}"
-            return row[column]
+            if syllables <= MAX_PRECOMPUTED_RHYME_KEY:
+                column = f"rhyme_key_{syllables}"
+                return row[column]
+            pronunciation = Pronunciation(tuple(row["pronunciation"].split()))
+            return pronunciation.rhyme_key(syllables)
         if options.pattern_type == "phonemes":
             return row["pronunciation"]
         return None

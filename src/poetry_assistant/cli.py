@@ -27,17 +27,27 @@ def configure_logging(verbose: bool) -> None:
 
 
 def main(argv: Optional[list[str]] = None) -> None:
-    parser = argparse.ArgumentParser(description="Phonetic rhyme assistant")
-    parser.add_argument("--database", default="poetry_assistant.db", help="SQLite database path")
-    parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument(
+        "--database", default=argparse.SUPPRESS, help="SQLite database path"
+    )
+    common.add_argument(
+        "--verbose", action="store_true", default=argparse.SUPPRESS, help="Enable debug logging"
+    )
+
+    parser = argparse.ArgumentParser(description="Phonetic rhyme assistant", parents=[common])
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    ingest_parser = subparsers.add_parser("ingest", help="Download and ingest data sources")
+    ingest_parser = subparsers.add_parser(
+        "ingest", parents=[common], help="Download and ingest data sources"
+    )
     ingest_parser.add_argument("--cmu", help="Path to CMU pronouncing dictionary file")
     ingest_parser.add_argument("--no-wordnet", action="store_true", help="Skip WordNet enrichment")
 
-    search_parser = subparsers.add_parser("search", help="Search for rhymes and phonetic patterns")
+    search_parser = subparsers.add_parser(
+        "search", parents=[common], help="Search for rhymes and phonetic patterns"
+    )
     search_parser.add_argument("pattern", nargs="?", help="Phoneme pattern to match")
     search_parser.add_argument("--type", choices=["rhyme", "vowel", "consonant", "both", "phonemes"], default="rhyme")
     search_parser.add_argument("--syllables", type=int, default=1, help="Number of syllables to consider for rhyme matching")
@@ -51,10 +61,14 @@ def main(argv: Optional[list[str]] = None) -> None:
     search_parser.add_argument("--synonym", help="Search using synonym text")
     search_parser.add_argument("--limit", type=int, default=25, help="Maximum number of results")
 
-    word_parser = subparsers.add_parser("word", help="Show pronunciations and definitions for a word")
+    word_parser = subparsers.add_parser(
+        "word", parents=[common], help="Show pronunciations and definitions for a word"
+    )
     word_parser.add_argument("word", help="Word to inspect")
 
-    rhyme_parser = subparsers.add_parser("rhymes-with", help="Suggest words that rhyme with the end of a line")
+    rhyme_parser = subparsers.add_parser(
+        "rhymes-with", parents=[common], help="Suggest words that rhyme with the end of a line"
+    )
     rhyme_parser.add_argument("line", help="Input line to analyse")
     rhyme_parser.add_argument("--max-syllables", type=int, default=3, help="Maximum syllables to match")
     rhyme_parser.add_argument("--max-distance", type=int, help="Maximum edit distance for near rhymes")
@@ -63,9 +77,10 @@ def main(argv: Optional[list[str]] = None) -> None:
     rhyme_parser.add_argument("--limit", type=int, default=15, help="Maximum suggestions per syllable count")
 
     args = parser.parse_args(argv)
-    configure_logging(args.verbose)
 
-    db_path = Path(args.database)
+    configure_logging(bool(getattr(args, "verbose", False)))
+
+    db_path = Path(getattr(args, "database", "poetry_assistant.db"))
 
     if args.command == "ingest":
         build_database(

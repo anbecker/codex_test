@@ -25,3 +25,11 @@ def test_stress_filter(sample_db):
     results = engine.search(options)
     assert all(result.stress_pattern.startswith("1") for result in results)
 
+
+def test_rhyme_search_with_large_syllable_request(sample_db):
+    engine = SearchEngine(sample_db)
+    options = SearchOptions(pattern="AE1 T", pattern_type="rhyme", syllables=5, limit=10)
+    results = engine.search(options)
+    # No entries should match but the search should gracefully handle the request
+    assert results == []
+

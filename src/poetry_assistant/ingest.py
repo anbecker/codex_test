@@ -7,9 +7,17 @@ import tempfile
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Tuple
 
-import nltk
-from nltk.corpus import wordnet as wn
-from tqdm import tqdm
+try:  # pragma: no cover - optional dependency setup
+    import nltk
+    from nltk.corpus import wordnet as wn
+except ModuleNotFoundError:  # pragma: no cover - handled lazily
+    nltk = None  # type: ignore[assignment]
+    wn = None  # type: ignore[assignment]
+try:  # pragma: no cover - optional dependency setup
+    from tqdm import tqdm
+except ModuleNotFoundError:  # pragma: no cover - degrade gracefully
+    def tqdm(iterable, **_kwargs):  # type: ignore[no-redef]
+        return iterable
 
 from .database import PoetryDatabase
 
@@ -28,6 +36,12 @@ POS_MAP = {
 
 def ensure_nltk_data() -> None:
     """Ensure the WordNet corpus is available."""
+
+    if nltk is None or wn is None:
+        raise RuntimeError(
+            "WordNet support requires the 'nltk' package. Install it via 'pip install "
+            "poetry-assistant[cli]' or add nltk to your environment."
+        )
 
     try:
         wn.ensure_loaded()
@@ -113,6 +127,9 @@ def build_database(
     """Build or update the assistant database."""
 
     db_path = Path(database_path)
+    parent = db_path.parent
+    if parent != Path(".") and not parent.exists():
+        parent.mkdir(parents=True, exist_ok=True)
     db = PoetryDatabase(db_path)
     db.initialize()
 

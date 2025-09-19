@@ -16,7 +16,7 @@ A command line assistant for lyricists, poets, and rappers. The application buil
 The project is packaged as a standard Python module. Install dependencies and the CLI entry point with `pip`:
 
 ```bash
-pip install -e .[cli]
+pip install -e ".[cli]"
 ```
 
 The optional `tabulate` dependency provides pretty tabular output; without it, search results are emitted as JSON.
