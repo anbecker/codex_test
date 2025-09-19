@@ -67,11 +67,18 @@ def parse_cmudict(path: Path) -> Iterator[Tuple[str, List[str]]]:
     """Yield ``(word, phonemes)`` from a CMU dictionary file."""
 
     pattern = re.compile(r"^(?P<word>[A-Z'\-.]+)(?:\((?P<variant>\d+)\))?\s+(?P<phones>.+)")
-    with path.open("r", encoding="utf8") as handle:
-        for line in handle:
+    # The upstream CMU dictionary occasionally contains Latin-1 bytes in
+    # comment lines (for example ``CAF\xc9``).  Opening the file with the
+    # default UTF-8 reader would raise a ``UnicodeDecodeError`` when such
+    # bytes are encountered.  Using a Latin-1 reader ensures we can parse the
+    # file without failing while still returning the ASCII word entries
+    # exactly as expected.
+    with path.open("r", encoding="latin-1") as handle:
+        for raw_line in handle:
+            line = raw_line.strip()
             if not line or line.startswith(";;;"):
                 continue
-            match = pattern.match(line.strip())
+            match = pattern.match(line)
             if not match:
                 continue
             word = match.group("word").lower()

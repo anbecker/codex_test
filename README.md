@@ -29,12 +29,12 @@ Create or refresh the SQLite database by downloading the source corpora:
 poetry-assistant ingest --database data/poetry.db
 ```
 
-The ingestion command downloads the CMU Pronouncing Dictionary (~3 MB) and the WordNet lexicon (~30 MB via NLTK) and stores structured records in the requested database file. Use `--cmu` to point at a local CMU file, or `--no-wordnet` to skip definition enrichment.
+The CLI defaults to storing data in `poetry_assistant.db` in the current directory. If you choose a different location, such as `data/poetry.db` above, pass the same `--database` flag to subsequent commands. The ingestion command downloads the CMU Pronouncing Dictionary (~3 MB) and the WordNet lexicon (~30 MB via NLTK) and stores structured records in the requested database file. Use `--cmu` to point at a local CMU file, or `--no-wordnet` to skip definition enrichment.
 
 ## Searching the lexicon
 
 ```bash
-poetry-assistant search "AE1 T" --type rhyme --syllables 1 --limit 10
+poetry-assistant search "AE1 T" --type rhyme --syllables 1 --limit 10 --database data/poetry.db
 ```
 
 Key options:
@@ -51,7 +51,7 @@ Results include each word’s pronunciation, stress signature, similarity score 
 ## Rhyming with entire lines
 
 ```bash
-poetry-assistant rhymes-with "I wrote a clever rap" --max-syllables 3
+poetry-assistant rhymes-with "I wrote a clever rap" --max-syllables 3 --database data/poetry.db
 ```
 
 The assistant tokenises the final words of the line, retrieves pronunciations, and returns rhyme suggestions for the last one through N syllables. Near-rhyme parameters (`--max-distance`, `--min-similarity`, `--pos`) mirror the search command.
@@ -59,7 +59,7 @@ The assistant tokenises the final words of the line, retrieves pronunciations, a
 ## Inspecting individual entries
 
 ```bash
-poetry-assistant word serendipity
+poetry-assistant word serendipity --database data/poetry.db
 ```
 
 Displays all pronunciations along with syllable counts, stress patterns, and the associated definitions and synonyms.
