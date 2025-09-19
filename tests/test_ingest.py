@@ -22,7 +22,7 @@ def test_build_database_creates_nested_directory(tmp_path):
 def test_cmudict_ingest_tolerates_latin1_bytes(tmp_path):
     cmu_dict = tmp_path / "cmudict.sample"
     cmu_dict.write_bytes(
-        b"CAT  K AE1 T\n;;; CAF\xC9 COMMENT\nDOG  D AO1 G\n"
+        b"CAT  K AE1 T\n\n;;; CAF\xC9 COMMENT\n  ;;; LEADING SPACE COMMENT\nDOG  D AO1 G\n"
     )
 
     entries = list(parse_cmudict(cmu_dict))

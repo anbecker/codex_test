@@ -74,10 +74,11 @@ def parse_cmudict(path: Path) -> Iterator[Tuple[str, List[str]]]:
     # file without failing while still returning the ASCII word entries
     # exactly as expected.
     with path.open("r", encoding="latin-1") as handle:
-        for line in handle:
+        for raw_line in handle:
+            line = raw_line.strip()
             if not line or line.startswith(";;;"):
                 continue
-            match = pattern.match(line.strip())
+            match = pattern.match(line)
             if not match:
                 continue
             word = match.group("word").lower()
