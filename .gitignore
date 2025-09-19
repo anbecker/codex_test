@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.poetry-assistant.db
+poetry_assistant.db
+.nltk_data/
+.venv/
