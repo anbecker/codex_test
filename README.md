@@ -6,6 +6,7 @@ A command line assistant for lyricists, poets, and rappers. The application buil
 
 * **Comprehensive phonetic database** – ingest the [CMU Pronouncing Dictionary](https://github.com/cmusphinx/cmudict) for pronunciations and syllable stress patterns, and enrich entries with definitions, parts of speech, and synonym sets from [WordNet](https://wordnet.princeton.edu/).
 * **Phoneme-aware search** – query by terminal vowel sounds, consonant clusters, combined rhyme keys, full pronunciations, or stress patterns using wildcard or regular-expression style syntax.
+* **Syllable-level pattern search** – describe multi-syllable sequences with onset/nucleus/coda constraints and stress controls for deep rhyme exploration.
 * **Near-rhyme support** – compute phoneme edit distance and similarity scores so that off-rhymes and slant rhymes are surfaced alongside perfect rhymes.
 * **Lexical filters** – limit results to words with specific parts of speech, textual definitions, or synonyms.
 * **Rhyming line assistant** – analyse the last syllables of an input line and propose candidate rhyme words for one to four ending syllables.
@@ -40,13 +41,14 @@ poetry-assistant search "AE1 T" --type rhyme --syllables 1 --limit 10 --database
 Key options:
 
 * `pattern` – phoneme pattern expressed in ARPABET. Use `*` and `?` wildcards or `--regex` for full regular expressions.
-* `--type` – choose `rhyme`, `vowel`, `consonant`, `both`, or `phonemes` depending on the feature you want to match.
+* `--type` – choose `rhyme`, `vowel`, `consonant`, `both`, `phonemes`, or `syllable` depending on the feature you want to match.
 * `--syllables` – how many ending syllables to consider when `--type rhyme`.
 * `--max-distance` / `--min-similarity` – enable near-match scoring by phoneme edit distance.
 * `--stress` – wildcard mask over stress digits (e.g. `1*0` to require stressed then unstressed syllables).
+* `--ignore-syllable-stress` – ignore stress differences when evaluating syllable patterns.
 * `--pos`, `--definition`, `--synonym` – filter by lexical metadata from WordNet.
 
-Results include each word’s pronunciation, stress signature, similarity score (if applicable), and the first matching definition.
+Results include each word’s pronunciation, stress signature, similarity score (if applicable), the syllable range that matched (for syllable searches), and the first matching definition. See `docs/syllable_pattern_guide.md` for the full pattern syntax and examples.
 
 ## Rhyming with entire lines
 
