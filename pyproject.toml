@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=67", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "poetry-assistant"
+version = "0.1.0"
+description = "A phonetic rhyme and poetry assistant"
+authors = [{name = "AI", email = "ai@example.com"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "nltk>=3.8",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+cli = ["tabulate>=0.9"]
+
+[project.scripts]
+poetry-assistant = "poetry_assistant.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
