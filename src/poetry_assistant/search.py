@@ -4,11 +4,12 @@ from __future__ import annotations
 import fnmatch
 import re
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 from .database import PoetryDatabase
 from .models import SearchResult
 from .phonetics import Pronunciation, similarity, tokens
+from .syllables import SyllablePattern, find_syllable_matches, parse_syllable_pattern, syllabify
 
 
 MAX_PRECOMPUTED_RHYME_KEY = 4
@@ -24,6 +25,7 @@ class SearchOptions:
     max_distance: Optional[int] = None
     min_similarity: Optional[float] = None
     stress_pattern: Optional[str] = None
+    ignore_stress: bool = False
     part_of_speech: Optional[str] = None
     definition_query: Optional[str] = None
     synonym_query: Optional[str] = None
@@ -43,36 +45,55 @@ class SearchEngine:
             synonym_query=options.synonym_query,
         )
         results: List[SearchResult] = []
+        syllable_pattern: Optional[List[SyllablePattern]] = None
+        if options.pattern_type == "syllable":
+            syllable_pattern = parse_syllable_pattern(options.pattern or "")
         for row in rows:
-            sequence = self._sequence_from_row(row, options)
-            if sequence is None:
-                continue
-            pattern_match = True
-            if options.pattern:
-                pattern_match = self._matches_pattern(sequence, options)
-                near_enabled = options.max_distance is not None or options.min_similarity is not None
-                if not pattern_match and not near_enabled:
+            score = None
+            match_span: Optional[Tuple[int, int]] = None
+            if options.pattern_type == "syllable":
+                syllables = syllabify(row["pronunciation"].split())
+                assert syllable_pattern is not None
+                matches = find_syllable_matches(
+                    syllables,
+                    syllable_pattern,
+                    contains=options.contains,
+                    ignore_stress=options.ignore_stress,
+                )
+                if not matches:
                     continue
+                match_span = matches[0]
+                score = 1.0 if syllable_pattern else None
+            else:
+                sequence = self._sequence_from_row(row, options)
+                if sequence is None:
+                    continue
+                pattern_match = True
+                if options.pattern:
+                    pattern_match = self._matches_pattern(sequence, options)
+                    near_enabled = options.max_distance is not None or options.min_similarity is not None
+                    if not pattern_match and not near_enabled:
+                        continue
             if options.stress_pattern:
                 if not match_wildcard(row["stress_pattern"] or "", options.stress_pattern):
                     continue
-            score = None
-            if options.pattern and options.max_distance is not None:
-                distance = _edit_distance(sequence, options.pattern)
-                if distance > options.max_distance:
-                    continue
-                seq_tokens = sequence.split()
-                pattern_tokens = tokens(options.pattern)
-                normalizer = max(len(seq_tokens), len(pattern_tokens) or 1)
-                score = 1.0 - distance / normalizer if normalizer else 1.0
-            elif options.pattern and options.min_similarity is not None:
-                score = similarity(sequence.split(), tokens(options.pattern))
-                if score < options.min_similarity:
-                    continue
-            elif options.pattern:
-                if not pattern_match:
-                    continue
-                score = 1.0
+            if options.pattern_type != "syllable":
+                if options.pattern and options.max_distance is not None:
+                    distance = _edit_distance(sequence, options.pattern)
+                    if distance > options.max_distance:
+                        continue
+                    seq_tokens = sequence.split()
+                    pattern_tokens = tokens(options.pattern)
+                    normalizer = max(len(seq_tokens), len(pattern_tokens) or 1)
+                    score = 1.0 - distance / normalizer if normalizer else 1.0
+                elif options.pattern and options.min_similarity is not None:
+                    score = similarity(sequence.split(), tokens(options.pattern))
+                    if score < options.min_similarity:
+                        continue
+                elif options.pattern:
+                    if not pattern_match:
+                        continue
+                    score = 1.0
             result = SearchResult(
                 word_id=row["word_id"],
                 word=row["word"],
@@ -83,6 +104,7 @@ class SearchEngine:
                 terminal_vowels=row["terminal_vowels"],
                 terminal_consonants=row["terminal_consonants"],
                 rhyme_key=row["rhyme_key_1"],
+                matched_syllables=match_span,
             )
             results.append(result)
             if len(results) >= options.limit and not options.pattern:

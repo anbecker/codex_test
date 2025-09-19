@@ -1,0 +1,60 @@
+ARPABET PHONEME REFERENCE
+=========================
+
+Vowels (append stress digits 0, 1, or 2 when present):
+  AA  ("cot")
+  AE  ("cat")
+  AH  ("cup")
+  AO  ("caught")
+  AW  ("cow")
+  AY  ("kite")
+  EH  ("bet")
+  ER  ("bird")
+  EY  ("bait")
+  IH  ("bit")
+  IY  ("beet")
+  OW  ("boat")
+  OY  ("boy")
+  UH  ("book")
+  UW  ("boot")
+
+Common consonants:
+  B   (voiced bilabial stop)
+  CH  (voiceless postalveolar affricate)
+  D   (voiced alveolar stop)
+  DH  (voiced dental fricative)
+  DX  (voiced flap)
+  F   (voiceless labiodental fricative)
+  G   (voiced velar stop)
+  HH  (voiceless glottal fricative)
+  JH  (voiced postalveolar affricate)
+  K   (voiceless velar stop)
+  L   (alveolar lateral)
+  M   (bilabial nasal)
+  N   (alveolar nasal)
+  NG  (velar nasal)
+  P   (voiceless bilabial stop)
+  R   (alveolar approximant)
+  S   (voiceless alveolar fricative)
+  SH  (voiceless postalveolar fricative)
+  T   (voiceless alveolar stop)
+  TH  (voiceless dental fricative)
+  V   (voiced labiodental fricative)
+  W   (voiced labio-velar approximant)
+  Y   (palatal approximant)
+  Z   (voiced alveolar fricative)
+  ZH  (voiced postalveolar fricative)
+
+Syllabic consonant symbols behave like vowels within some dictionaries but are
+treated as consonants by the search engine:
+  EL  (syllabic L)
+  EM  (syllabic M)
+  EN  (syllabic N)
+  NX  (syllabic NG)
+
+General notes:
+* Vowel phonemes appear with stress digits appended (e.g., `AE1`, `ER0`).
+* Consonant clusters are written by placing phoneme symbols side-by-side
+  separated by spaces (e.g., `S P`, `K R`, `T R`).
+* Wildcards in syllable patterns use the same ASCII symbols (`*`, `?`) as shell
+  globbing.

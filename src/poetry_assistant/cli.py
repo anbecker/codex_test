@@ -49,13 +49,22 @@ def main(argv: Optional[list[str]] = None) -> None:
         "search", parents=[common], help="Search for rhymes and phonetic patterns"
     )
     search_parser.add_argument("pattern", nargs="?", help="Phoneme pattern to match")
-    search_parser.add_argument("--type", choices=["rhyme", "vowel", "consonant", "both", "phonemes"], default="rhyme")
+    search_parser.add_argument(
+        "--type",
+        choices=["rhyme", "vowel", "consonant", "both", "phonemes", "syllable"],
+        default="rhyme",
+    )
     search_parser.add_argument("--syllables", type=int, default=1, help="Number of syllables to consider for rhyme matching")
     search_parser.add_argument("--regex", action="store_true", help="Treat pattern as regular expression")
     search_parser.add_argument("--contains", action="store_true", help="Allow substring matches instead of whole string matches")
     search_parser.add_argument("--max-distance", type=int, help="Maximum edit distance for near matches")
     search_parser.add_argument("--min-similarity", type=float, help="Minimum similarity score for matches (0-1)")
     search_parser.add_argument("--stress", help="Stress pattern wildcard (use * and ?)")
+    search_parser.add_argument(
+        "--ignore-syllable-stress",
+        action="store_true",
+        help="Ignore stress when evaluating syllable patterns",
+    )
     search_parser.add_argument("--pos", help="Part of speech filter (noun, verb, adjective, adverb)")
     search_parser.add_argument("--definition", help="Search for words whose definition contains this text")
     search_parser.add_argument("--synonym", help="Search using synonym text")
@@ -108,6 +117,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             max_distance=args.max_distance,
             min_similarity=args.min_similarity,
             stress_pattern=args.stress,
+            ignore_stress=args.ignore_syllable_stress,
             part_of_speech=args.pos,
             definition_query=args.definition,
             synonym_query=args.synonym,
@@ -163,19 +173,24 @@ def _print_results(results: list[SearchResult]) -> None:
     if not results:
         print("No matches found")
         return
+    show_match = any(result.matched_syllables for result in results)
     rows = []
     for result in results:
         definition = result.definitions[0].definition if result.definitions else ""
-        rows.append(
-            [
-                result.word,
-                result.pronunciation,
-                result.stress_pattern,
-                result.similarity if result.similarity is not None else "",
-                definition,
-            ]
-        )
-    headers = ["Word", "Pronunciation", "Stress", "Similarity", "Definition"]
+        similarity = result.similarity if result.similarity is not None else ""
+        match_text = ""
+        if result.matched_syllables:
+            start, end = result.matched_syllables
+            match_text = f"{start + 1}-{end}"
+        row = [result.word, result.pronunciation, result.stress_pattern]
+        if show_match:
+            row.append(match_text)
+        row.extend([similarity, definition])
+        rows.append(row)
+    headers = ["Word", "Pronunciation", "Stress"]
+    if show_match:
+        headers.append("Match")
+    headers.extend(["Similarity", "Definition"])
     if tabulate:
         print(tabulate(rows, headers=headers))
     else:

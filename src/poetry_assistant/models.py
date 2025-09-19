@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 
 @dataclass
@@ -27,4 +27,5 @@ class SearchResult:
     terminal_consonants: str
     rhyme_key: Optional[str]
     definitions: List[Definition] = field(default_factory=list)
+    matched_syllables: Optional[Tuple[int, int]] = None
 

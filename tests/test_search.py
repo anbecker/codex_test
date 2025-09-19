@@ -33,3 +33,36 @@ def test_rhyme_search_with_large_syllable_request(sample_db):
     # No entries should match but the search should gracefully handle the request
     assert results == []
 
+
+def test_syllable_pattern_exact(sample_db):
+    engine = SearchEngine(sample_db)
+    options = SearchOptions(pattern="[S P]-AY1/0{1} D-ER0/0{0}", pattern_type="syllable", limit=10)
+    results = engine.search(options)
+    assert [result.word for result in results] == ["spider"]
+    assert results[0].matched_syllables == (0, 2)
+
+
+def test_syllable_pattern_contains(sample_db):
+    engine = SearchEngine(sample_db)
+    options = SearchOptions(pattern="*-AW1/*{1}", pattern_type="syllable", contains=True, limit=10)
+    results = engine.search(options)
+    words = [result.word for result in results]
+    assert "about" in words
+    about_result = next(result for result in results if result.word == "about")
+    assert about_result.matched_syllables == (1, 2)
+
+
+def test_syllable_pattern_ignore_stress(sample_db):
+    engine = SearchEngine(sample_db)
+    strict = SearchOptions(pattern="D-ER*/0{1}", pattern_type="syllable", contains=True, limit=10)
+    relaxed = SearchOptions(
+        pattern="D-ER*/0{1}",
+        pattern_type="syllable",
+        contains=True,
+        ignore_stress=True,
+        limit=10,
+    )
+    strict_results = engine.search(strict)
+    relaxed_results = engine.search(relaxed)
+    assert all(result.word != "spider" for result in strict_results)
+    assert any(result.word == "spider" for result in relaxed_results)
