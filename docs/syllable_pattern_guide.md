@@ -61,8 +61,8 @@ Examples:
 
 * `*-(ER|AH)/*{0}` – matches an unstressed syllable with vowel `ER0` or `AH0`.
 * `*-EH/*{1} *-(AH|ER)/*{0} *-AE/P{1}` – matches three-syllable phrases such as
-  **clever rap** (`K L EH1 · V ER0 · R AE1 P`) and **mend the gap**
-  (`M EH1 N D · DH AH0 · G AE1 P`).
+  **clever rap** (`K_L-EH1/V R-ER0/0 R-AE1/P`) and **mend the gap**
+  (`M-EH1/ND DH-AH0/0 G-AE1/P`).
 
 ## Token-aware onset and coda constraints
 
@@ -132,7 +132,7 @@ from poetry_assistant import syllabify
 
 syllables = syllabify("S P AY1 D ER0")
 for syllable in syllables:
-    print(syllable.onset_text, syllable.vowel, syllable.coda_text, syllable.stress)
+    print(f"{syllable.onset_text}-{syllable.vowel}/{syllable.coda_text}", syllable.stress)
 ```
 
 ## Tips
