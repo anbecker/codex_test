@@ -204,16 +204,24 @@ class ComponentPattern:
 
 
 @dataclass(frozen=True)
+class VowelPattern:
+    options: Tuple[str, ...]
+
+    def matches(self, vowel: str) -> bool:
+        return any(fnmatch.fnmatchcase(vowel, option) for option in self.options)
+
+
+@dataclass(frozen=True)
 class SyllablePattern:
     onset: ComponentPattern
-    vowel: str
+    vowel: VowelPattern
     coda: ComponentPattern
     stress: Optional[set[str]] = None
 
     def matches(self, syllable: Syllable, *, ignore_stress: bool = False) -> bool:
         if not self.onset.matches(syllable.onset):
             return False
-        if not fnmatch.fnmatchcase(syllable.vowel, self.vowel):
+        if not self.vowel.matches(syllable.vowel):
             return False
         if not self.coda.matches(syllable.coda):
             return False
@@ -249,7 +257,7 @@ def parse_syllable_pattern(pattern: str) -> List[SyllablePattern]:
         syllables.append(
             SyllablePattern(
                 onset=onset,
-                vowel=_normalize_component_text(vowel_text),
+                vowel=_parse_vowel_pattern(vowel_text),
                 coda=coda,
                 stress=stress_values,
             )
@@ -362,6 +370,47 @@ def _parse_component(text: str, allow_wildcard: bool) -> ComponentPattern:
         raise ValueError("'*' is not allowed for onset components; use explicit phonemes or omit the onset")
     token_pattern = _compile_component_pattern(normalized)
     return ComponentPattern(tokens=token_pattern)
+
+
+def _parse_vowel_pattern(text: str) -> VowelPattern:
+    raw = text.strip()
+    if not raw:
+        raise ValueError("Vowel component cannot be empty")
+    cleaned = _strip_brackets(raw)
+    pieces = _split_vowel_options(cleaned)
+    options: List[str] = []
+    for piece in pieces:
+        normalized = _normalize_vowel_option(piece)
+        if normalized not in options:
+            options.append(normalized)
+    if not options:
+        raise ValueError(f"Invalid vowel specification '{text}'")
+    return VowelPattern(tuple(options))
+
+
+def _split_vowel_options(text: str) -> List[str]:
+    normalized = (
+        text.replace("|", " ")
+        .replace(",", " ")
+        .replace("_", " ")
+        .replace(".", " ")
+        .replace("+", " ")
+    )
+    return [piece for piece in normalized.split() if piece]
+
+
+def _normalize_vowel_option(option: str) -> str:
+    cleaned = option.strip()
+    if not cleaned:
+        raise ValueError("Empty vowel option is not allowed")
+    normalized = cleaned.upper()
+    if normalized == "*":
+        return normalized
+    has_digit = any(char.isdigit() for char in normalized)
+    has_wildcard = any(char in {"*", "?"} for char in normalized)
+    if not has_digit and not has_wildcard:
+        return f"{normalized}?"
+    return normalized
 
 
 def _strip_brackets(text: str) -> str:

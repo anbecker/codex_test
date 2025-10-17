@@ -66,3 +66,11 @@ def test_multi_letter_phonemes_match_with_wildcards():
     single_onset_pattern = parse_syllable_pattern("?-AA1/(R M)")
     assert matches_syllable_pattern(thrown, pattern_second_r)
     assert matches_syllable_pattern(charm, single_onset_pattern)
+
+
+def test_vowel_alternatives_match_multiple_words():
+    pattern = parse_syllable_pattern("*-EH/*{1} *-(AH|ER)/*{0} *-AE/P{1}")
+    clever_rap = syllabify("K L EH1 V ER0 R AE1 P")
+    mend_the_gap = syllabify("M EH1 N D DH AH0 G AE1 P")
+    assert matches_syllable_pattern(clever_rap, pattern)
+    assert matches_syllable_pattern(mend_the_gap, pattern)

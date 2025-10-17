@@ -49,6 +49,21 @@ This pattern matches the pronunciation of “spider”.
   sequence in `[]` or `()`, or use `_`, `.` or `+` as separators. For example,
   `[K R]-OW1` and `K_R-OW1` both specify an onset of `K R`.
 
+### Vowel alternatives
+
+* Provide multiple vowel options by separating them with `|`, commas, or
+  whitespace inside brackets/parentheses. Each option may include wildcards.
+* When you omit a stress digit (e.g., `ER` instead of `ER0`), the pattern will
+  match any vowel sharing that base phoneme. Combine with stress braces to limit
+  the allowed stress levels.
+
+Examples:
+
+* `*-(ER|AH)/*{0}` – matches an unstressed syllable with vowel `ER0` or `AH0`.
+* `*-EH/*{1} *-(AH|ER)/*{0} *-AE/P{1}` – matches three-syllable phrases such as
+  **clever rap** (`K L EH1 · V ER0 · R AE1 P`) and **mend the gap**
+  (`M EH1 N D · DH AH0 · G AE1 P`).
+
 ## Token-aware onset and coda constraints
 
 Onset and coda patterns operate on whole phoneme tokens, so wildcards respect
