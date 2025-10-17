@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import _bootstrap  # noqa: F401
+
 from poetry_assistant import cli
 
 

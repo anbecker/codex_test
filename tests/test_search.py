@@ -1,3 +1,5 @@
+import _bootstrap  # noqa: F401
+
 from poetry_assistant.search import SearchEngine, SearchOptions
 
 

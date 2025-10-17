@@ -1,3 +1,5 @@
+import _bootstrap  # noqa: F401
+
 from poetry_assistant.database import PoetryDatabase
 from poetry_assistant.ingest import build_database, ingest_cmudict, parse_cmudict
 

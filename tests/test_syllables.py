@@ -1,3 +1,5 @@
+import _bootstrap  # noqa: F401
+
 from poetry_assistant.syllables import (
     find_syllable_matches,
     matches_syllable_pattern,

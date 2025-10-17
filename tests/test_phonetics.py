@@ -1,5 +1,7 @@
 import pytest
 
+import _bootstrap  # noqa: F401
+
 from poetry_assistant.phonetics import Pronunciation, levenshtein_distance, similarity
 
 
