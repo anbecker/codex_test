@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
+import _bootstrap  # noqa: F401
 import pytest
-
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 from poetry_assistant.database import PoetryDatabase
 
@@ -33,6 +28,18 @@ def sample_db(tmp_path):
         "battle": {
             "pronunciations": ["B AE1 T AH0 L"],
             "definitions": [("noun", "a fight between opposing forces", ["combat"])],
+        },
+        "about": {
+            "pronunciations": ["AH0 B AW1 T"],
+            "definitions": [("preposition", "on the subject of", ["regarding"])],
+        },
+        "spider": {
+            "pronunciations": ["S P AY1 D ER0"],
+            "definitions": [("noun", "an eight-legged arachnid", ["arachnid"])],
+        },
+        "amazing": {
+            "pronunciations": ["AH0 M EY1 Z IH0 NG"],
+            "definitions": [("adjective", "causing great surprise", ["astonishing"])],
         },
     }
 

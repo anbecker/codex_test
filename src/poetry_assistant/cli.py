@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -24,6 +25,38 @@ LOGGER = logging.getLogger("poetry_assistant")
 def configure_logging(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
+
+
+def _default_database_path() -> Path:
+    """Return the default database path, honouring environment overrides."""
+
+    def _normalize(path: Path | str) -> Path:
+        return Path(path).expanduser().resolve(strict=False)
+
+    env_path = os.getenv("POETRY_ASSISTANT_DB")
+    if env_path:
+        return _normalize(env_path)
+
+    xdg_data_home = os.getenv("XDG_DATA_HOME")
+    base = Path(xdg_data_home).expanduser() if xdg_data_home else Path.home() / ".local" / "share"
+    default = base / "poetry_assistant" / "poetry_assistant.db"
+    legacy = Path.home() / ".poetry_assistant" / "poetry_assistant.db"
+    cwd_candidate = Path("poetry_assistant.db")
+
+    for candidate in (default, legacy, cwd_candidate):
+        expanded = candidate.expanduser()
+        if expanded.exists():
+            return expanded.resolve(strict=False)
+
+    return _normalize(default)
+
+
+def _resolve_database_path(explicit: Optional[str]) -> Path:
+    """Resolve the requested database path or fall back to the default."""
+
+    if explicit:
+        return Path(explicit).expanduser().resolve(strict=False)
+    return _default_database_path()
 
 
 def main(argv: Optional[list[str]] = None) -> None:
@@ -49,13 +82,22 @@ def main(argv: Optional[list[str]] = None) -> None:
         "search", parents=[common], help="Search for rhymes and phonetic patterns"
     )
     search_parser.add_argument("pattern", nargs="?", help="Phoneme pattern to match")
-    search_parser.add_argument("--type", choices=["rhyme", "vowel", "consonant", "both", "phonemes"], default="rhyme")
+    search_parser.add_argument(
+        "--type",
+        choices=["rhyme", "vowel", "consonant", "both", "phonemes", "syllable"],
+        default="rhyme",
+    )
     search_parser.add_argument("--syllables", type=int, default=1, help="Number of syllables to consider for rhyme matching")
     search_parser.add_argument("--regex", action="store_true", help="Treat pattern as regular expression")
     search_parser.add_argument("--contains", action="store_true", help="Allow substring matches instead of whole string matches")
     search_parser.add_argument("--max-distance", type=int, help="Maximum edit distance for near matches")
     search_parser.add_argument("--min-similarity", type=float, help="Minimum similarity score for matches (0-1)")
     search_parser.add_argument("--stress", help="Stress pattern wildcard (use * and ?)")
+    search_parser.add_argument(
+        "--ignore-syllable-stress",
+        action="store_true",
+        help="Ignore stress when evaluating syllable patterns",
+    )
     search_parser.add_argument("--pos", help="Part of speech filter (noun, verb, adjective, adverb)")
     search_parser.add_argument("--definition", help="Search for words whose definition contains this text")
     search_parser.add_argument("--synonym", help="Search using synonym text")
@@ -80,7 +122,7 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     configure_logging(bool(getattr(args, "verbose", False)))
 
-    db_path = Path(getattr(args, "database", "poetry_assistant.db"))
+    db_path = _resolve_database_path(getattr(args, "database", None))
 
     if args.command == "ingest":
         build_database(
@@ -108,6 +150,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             max_distance=args.max_distance,
             min_similarity=args.min_similarity,
             stress_pattern=args.stress,
+            ignore_stress=args.ignore_syllable_stress,
             part_of_speech=args.pos,
             definition_query=args.definition,
             synonym_query=args.synonym,
@@ -163,19 +206,24 @@ def _print_results(results: list[SearchResult]) -> None:
     if not results:
         print("No matches found")
         return
+    show_match = any(result.matched_syllables for result in results)
     rows = []
     for result in results:
         definition = result.definitions[0].definition if result.definitions else ""
-        rows.append(
-            [
-                result.word,
-                result.pronunciation,
-                result.stress_pattern,
-                result.similarity if result.similarity is not None else "",
-                definition,
-            ]
-        )
-    headers = ["Word", "Pronunciation", "Stress", "Similarity", "Definition"]
+        similarity = result.similarity if result.similarity is not None else ""
+        match_text = ""
+        if result.matched_syllables:
+            start, end = result.matched_syllables
+            match_text = f"{start + 1}-{end}"
+        row = [result.word, result.pronunciation, result.stress_pattern]
+        if show_match:
+            row.append(match_text)
+        row.extend([similarity, definition])
+        rows.append(row)
+    headers = ["Word", "Pronunciation", "Stress"]
+    if show_match:
+        headers.append("Match")
+    headers.extend(["Similarity", "Definition"])
     if tabulate:
         print(tabulate(rows, headers=headers))
     else:

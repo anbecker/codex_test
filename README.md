@@ -6,6 +6,7 @@ A command line assistant for lyricists, poets, and rappers. The application buil
 
 * **Comprehensive phonetic database** – ingest the [CMU Pronouncing Dictionary](https://github.com/cmusphinx/cmudict) for pronunciations and syllable stress patterns, and enrich entries with definitions, parts of speech, and synonym sets from [WordNet](https://wordnet.princeton.edu/).
 * **Phoneme-aware search** – query by terminal vowel sounds, consonant clusters, combined rhyme keys, full pronunciations, or stress patterns using wildcard or regular-expression style syntax.
+* **Syllable-level pattern search** – describe multi-syllable sequences with onset/nucleus/coda constraints and stress controls for deep rhyme exploration.
 * **Near-rhyme support** – compute phoneme edit distance and similarity scores so that off-rhymes and slant rhymes are surfaced alongside perfect rhymes.
 * **Lexical filters** – limit results to words with specific parts of speech, textual definitions, or synonyms.
 * **Rhyming line assistant** – analyse the last syllables of an input line and propose candidate rhyme words for one to four ending syllables.
@@ -21,37 +22,55 @@ pip install -e ".[cli]"
 
 The optional `tabulate` dependency provides pretty tabular output; without it, search results are emitted as JSON.
 
+## Available CLI commands
+
+The `poetry-assistant` executable exposes the following subcommands:
+
+* `ingest` – download source dictionaries and build or refresh the SQLite database.
+* `search` – query the lexicon for phoneme, syllable, rhyme, or lexical matches.
+* `word` – inspect every stored pronunciation, stress pattern, and definition for a given word.
+* `rhymes-with` – analyse the end of a line and propose rhyme candidates for the trailing syllables.
+
 ## Building the database
 
 Create or refresh the SQLite database by downloading the source corpora:
 
 ```bash
-poetry-assistant ingest --database data/poetry.db
+poetry-assistant ingest
 ```
 
-The CLI defaults to storing data in `poetry_assistant.db` in the current directory. If you choose a different location, such as `data/poetry.db` above, pass the same `--database` flag to subsequent commands. The ingestion command downloads the CMU Pronouncing Dictionary (~3 MB) and the WordNet lexicon (~30 MB via NLTK) and stores structured records in the requested database file. Use `--cmu` to point at a local CMU file, or `--no-wordnet` to skip definition enrichment.
+By default the assistant stores its data at
+`$XDG_DATA_HOME/poetry_assistant/poetry_assistant.db`, or
+`~/.local/share/poetry_assistant/poetry_assistant.db` if the XDG environment
+variable is not set. Set the `POETRY_ASSISTANT_DB` environment variable or pass
+`--database /path/to/file.db` to override the location. The ingestion command
+downloads the CMU Pronouncing Dictionary (~3 MB) and the WordNet lexicon (~30
+MB via NLTK) and stores structured records in the requested database file. Use
+`--cmu` to point at a local CMU file, or `--no-wordnet` to skip definition
+enrichment.
 
 ## Searching the lexicon
 
 ```bash
-poetry-assistant search "AE1 T" --type rhyme --syllables 1 --limit 10 --database data/poetry.db
+poetry-assistant search "AE1 T" --type rhyme --syllables 1 --limit 10
 ```
 
 Key options:
 
 * `pattern` – phoneme pattern expressed in ARPABET. Use `*` and `?` wildcards or `--regex` for full regular expressions.
-* `--type` – choose `rhyme`, `vowel`, `consonant`, `both`, or `phonemes` depending on the feature you want to match.
+* `--type` – choose `rhyme`, `vowel`, `consonant`, `both`, `phonemes`, or `syllable` depending on the feature you want to match.
 * `--syllables` – how many ending syllables to consider when `--type rhyme`.
 * `--max-distance` / `--min-similarity` – enable near-match scoring by phoneme edit distance.
 * `--stress` – wildcard mask over stress digits (e.g. `1*0` to require stressed then unstressed syllables).
+* `--ignore-syllable-stress` – ignore stress differences when evaluating syllable patterns.
 * `--pos`, `--definition`, `--synonym` – filter by lexical metadata from WordNet.
 
-Results include each word’s pronunciation, stress signature, similarity score (if applicable), and the first matching definition.
+Results include each word’s pronunciation, stress signature, similarity score (if applicable), the syllable range that matched (for syllable searches), and the first matching definition. See `docs/syllable_pattern_guide.md` for the full pattern syntax and examples.
 
 ## Rhyming with entire lines
 
 ```bash
-poetry-assistant rhymes-with "I wrote a clever rap" --max-syllables 3 --database data/poetry.db
+poetry-assistant rhymes-with "I wrote a clever rap" --max-syllables 3
 ```
 
 The assistant tokenises the final words of the line, retrieves pronunciations, and returns rhyme suggestions for the last one through N syllables. Near-rhyme parameters (`--max-distance`, `--min-similarity`, `--pos`) mirror the search command.
@@ -59,7 +78,7 @@ The assistant tokenises the final words of the line, retrieves pronunciations, a
 ## Inspecting individual entries
 
 ```bash
-poetry-assistant word serendipity --database data/poetry.db
+poetry-assistant word serendipity
 ```
 
 Displays all pronunciations along with syllable counts, stress patterns, and the associated definitions and synonyms.
