@@ -66,3 +66,23 @@ def test_syllable_pattern_ignore_stress(sample_db):
     relaxed_results = engine.search(relaxed)
     assert all(result.word != "spider" for result in strict_results)
     assert any(result.word == "spider" for result in relaxed_results)
+
+
+def test_three_syllable_vowel_options(sample_db):
+    # add entries that exercise multi-option vowel matching with explicit stress blocks
+    heavenly = sample_db.add_word("heavenly")
+    sample_db.add_pronunciation(heavenly, "HH EH1 V AH0 N L IY0".split())
+    seventeen = sample_db.add_word("seventeen")
+    sample_db.add_pronunciation(seventeen, "S EH1 V AH0 N T IY1 N".split())
+    memory = sample_db.add_word("memory")
+    sample_db.add_pronunciation(memory, "M EH1 M ER0 IY0".split())
+
+    engine = SearchEngine(sample_db)
+    options = SearchOptions(
+        pattern="*-EH[12]/* *-(AH|ER)[0]/* *-IY[012]/*",
+        pattern_type="syllable",
+        limit=10,
+    )
+    results = engine.search(options)
+    words = {result.word for result in results}
+    assert {"heavenly", "seventeen", "memory"}.issubset(words)

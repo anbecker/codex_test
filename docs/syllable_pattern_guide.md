@@ -107,11 +107,17 @@ pronunciation. Combine with `--ignore-syllable-stress` to ignore stress markers.
 poetry-assistant search "[S P]-AY[1] D-ER[0]" --type syllable
 poetry-assistant search "*-AW[1]/*" --type syllable --contains
 poetry-assistant search "D-ER*[1]" --type syllable --contains --ignore-syllable-stress
+poetry-assistant search "*-EH[12]/* *-(AH|ER)[0]/* *-IY[012]/*" --type syllable
 ```
 
 The tabulated output shows the syllable range that satisfied the pattern in the
 `Match` column. Ranges are 1-indexed and inclusive on the right. For example,
 `1-2` means the first two syllables matched.
+
+The final example demonstrates three syllables with wildcard onsets, vowel
+choices, and explicit stress blocks. It matches words such as "heavenly" (`HH
+EH1 V AH0 N L IY0`), "memory" (`M EH1 M ER0 IY0`), and "seventeen" (`S EH1 V
+AH0 N T IY1 N`).
 
 ## Programmatic Usage
 
