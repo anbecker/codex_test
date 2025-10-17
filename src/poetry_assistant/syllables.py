@@ -240,8 +240,6 @@ def parse_syllable_pattern(pattern: str) -> List[SyllablePattern]:
         core = token.strip()
         if not core:
             raise ValueError("Empty syllable pattern segment")
-        if "{" in core:
-            core, stress_values = _extract_stress(core)
         if "-" not in core:
             raise ValueError(f"Invalid syllable pattern '{token}': missing '-' separator")
         onset_text, remainder = core.split("-", 1)
@@ -254,6 +252,7 @@ def parse_syllable_pattern(pattern: str) -> List[SyllablePattern]:
         vowel_text = vowel_text.strip()
         if not vowel_text:
             raise ValueError(f"Invalid syllable pattern '{token}': missing vowel specification")
+        vowel_text, stress_values = _separate_stress_block(vowel_text)
         syllables.append(
             SyllablePattern(
                 onset=onset,
@@ -330,17 +329,49 @@ def _tokenize(pattern: str) -> List[str]:
     return tokens
 
 
-def _extract_stress(token: str) -> Tuple[str, Optional[set[str]]]:
-    if token.count("{") != token.count("}"):
-        raise ValueError(f"Mismatched braces in pattern '{token}'")
-    start = token.index("{")
-    end = token.index("}", start)
-    stress_spec = token[start + 1 : end].strip()
-    remaining = (token[:start] + token[end + 1 :]).strip()
-    if not stress_spec or stress_spec == "*":
-        return remaining, None
+def _separate_stress_block(text: str) -> Tuple[str, Optional[set[str]]]:
+    stripped = text.strip()
+    if not stripped:
+        raise ValueError("Vowel component cannot be empty")
+
+    for closing, opening in (("]", "["), ("}", "{")):
+        if stripped.endswith(closing):
+            start = _find_matching_open(stripped, opening, closing)
+            if start is None:
+                raise ValueError(f"Unmatched '{closing}' in vowel component '{text}'")
+            inner = stripped[start + 1 : -1].strip()
+            prefix = stripped[:start].strip()
+            if not prefix:
+                # the bracket pair belongs to the vowel options themselves
+                continue
+            if not inner or inner == "*":
+                return prefix, None
+            if _looks_like_stress(inner):
+                return prefix, _parse_stress_spec(inner)
+    return stripped, None
+
+
+def _find_matching_open(text: str, opening: str, closing: str) -> Optional[int]:
+    depth = 0
+    for index in range(len(text) - 1, -1, -1):
+        char = text[index]
+        if char == closing:
+            depth += 1
+        elif char == opening:
+            depth -= 1
+            if depth == 0:
+                return index
+    return None
+
+
+def _looks_like_stress(value: str) -> bool:
+    allowed = set("012PpSsUu|, ")
+    return all(char in allowed for char in value)
+
+
+def _parse_stress_spec(spec: str) -> Optional[set[str]]:
     allowed: set[str] = set()
-    for symbol in stress_spec.replace(",", "").replace("|", ""):
+    for symbol in spec.replace(",", "").replace("|", ""):
         if symbol in "012":
             allowed.add(symbol)
         elif symbol in "Pp":
@@ -352,10 +383,10 @@ def _extract_stress(token: str) -> Tuple[str, Optional[set[str]]]:
         elif symbol.isspace():
             continue
         else:
-            raise ValueError(f"Unknown stress marker '{symbol}' in pattern '{token}'")
+            raise ValueError(f"Unknown stress marker '{symbol}' in stress specification '{spec}'")
     if not allowed:
-        return remaining, None
-    return remaining, allowed
+        return None
+    return allowed
 
 
 def _parse_component(text: str, allow_wildcard: bool) -> ComponentPattern:

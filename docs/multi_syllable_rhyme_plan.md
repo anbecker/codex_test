@@ -56,23 +56,23 @@ We'll consider two usage modes:
 
 ### Pattern DSL Concepts
 
-We propose a per-syllable pattern grammar, e.g. `ONSET-VOWEL/CODA{STRESS}` or similar. For clarity:
+We propose a per-syllable pattern grammar, e.g. `ONSET-VOWEL[STRESS][/CODA]`:
 
 ```
-SyllablePattern := [Onset] '-' Vowel ['/' Coda] ['{' StressSpec '}']
+SyllablePattern := [Onset] '-' Vowel [StressSpec] ['/' Coda]
 ```
 
 * `Onset`, `Vowel`, `Coda` each accept wildcard characters `*` (any) and `?` (single phoneme) using shell-style semantics.
 * `Onset` and `Coda` components list consonant phonemes separated by spaces (e.g., `K R`), optionally compressed using `.` or `+` to indicate grouping if desirable. We may allow parentheses or just rely on spaces.
-* `Vowel` must contain one vowel phoneme with optional wildcard digits for stress (e.g., `AH*`), or we can separate stress using braces.
+* `Vowel` must contain one vowel phoneme, with stress handled by an optional trailing block such as `[1]`, `[0|2]`, or `{P}` so vowel tokens remain stress-agnostic.
 * `StressSpec` accepts values like `"*"` (don't care), `"S"` (primary stress), `"s"` (secondary), `"U"` (unstressed), or simply digits `0/1/2`.
 
-A multi-syllable pattern is a whitespace-separated list of syllable patterns. Example: `*-AH1/T *-IY0` meaning: first syllable any onset, vowel `AH1`, coda `T`; second syllable any onset, vowel `IY0`, no coda constraint.
+A multi-syllable pattern is a whitespace-separated list of syllable patterns. Example: `*-AH[1]/T *-IY[0]` meaning: first syllable any onset, vowel `AH`, primary stress, coda `T`; second syllable any onset, vowel `IY`, unstressed, no coda constraint.
 
 We'll need to define how to express "no onset" or "no coda". Proposed tokens:
 
 * `Ø` or `.` to represent an empty onset/coda explicitly.
-* Alternatively, treat empty string as valid (two dashes in a row). Example: `-AE1/T` to say no onset.
+* Alternatively, treat empty string as valid (two dashes in a row). Example: `-AE[1]/T` to say no onset.
 
 For planning we can adopt the latter: `-` followed immediately by the vowel pattern indicates empty onset; `*/-` etc. We'll detail this in documentation.
 
@@ -90,7 +90,7 @@ We'll parse the user-provided pattern string into a sequence of `SyllablePattern
 Parsing steps:
 
 1. Tokenize by whitespace to get syllable specs.
-2. For each token, parse subdivisions by `-` and `/` and optional stress braces.
+2. For each token, parse subdivisions by `-` and `/` plus an optional trailing stress block (`[...]` or `{...}`).
 3. Validate that vowels are present and that wildcard digits/stress align with known phoneme sets.
 4. Provide helpful errors for invalid tokens.
 
