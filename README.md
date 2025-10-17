@@ -22,6 +22,15 @@ pip install -e ".[cli]"
 
 The optional `tabulate` dependency provides pretty tabular output; without it, search results are emitted as JSON.
 
+## Available CLI commands
+
+The `poetry-assistant` executable exposes the following subcommands:
+
+* `ingest` – download source dictionaries and build or refresh the SQLite database.
+* `search` – query the lexicon for phoneme, syllable, rhyme, or lexical matches.
+* `word` – inspect every stored pronunciation, stress pattern, and definition for a given word.
+* `rhymes-with` – analyse the end of a line and propose rhyme candidates for the trailing syllables.
+
 ## Building the database
 
 Create or refresh the SQLite database by downloading the source corpora:
