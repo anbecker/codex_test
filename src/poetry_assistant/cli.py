@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -24,6 +25,38 @@ LOGGER = logging.getLogger("poetry_assistant")
 def configure_logging(verbose: bool) -> None:
     level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(level=level, format="%(levelname)s: %(message)s")
+
+
+def _default_database_path() -> Path:
+    """Return the default database path, honouring environment overrides."""
+
+    def _normalize(path: Path | str) -> Path:
+        return Path(path).expanduser().resolve(strict=False)
+
+    env_path = os.getenv("POETRY_ASSISTANT_DB")
+    if env_path:
+        return _normalize(env_path)
+
+    xdg_data_home = os.getenv("XDG_DATA_HOME")
+    base = Path(xdg_data_home).expanduser() if xdg_data_home else Path.home() / ".local" / "share"
+    default = base / "poetry_assistant" / "poetry_assistant.db"
+    legacy = Path.home() / ".poetry_assistant" / "poetry_assistant.db"
+    cwd_candidate = Path("poetry_assistant.db")
+
+    for candidate in (default, legacy, cwd_candidate):
+        expanded = candidate.expanduser()
+        if expanded.exists():
+            return expanded.resolve(strict=False)
+
+    return _normalize(default)
+
+
+def _resolve_database_path(explicit: Optional[str]) -> Path:
+    """Resolve the requested database path or fall back to the default."""
+
+    if explicit:
+        return Path(explicit).expanduser().resolve(strict=False)
+    return _default_database_path()
 
 
 def main(argv: Optional[list[str]] = None) -> None:
@@ -89,7 +122,7 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     configure_logging(bool(getattr(args, "verbose", False)))
 
-    db_path = Path(getattr(args, "database", "poetry_assistant.db"))
+    db_path = _resolve_database_path(getattr(args, "database", None))
 
     if args.command == "ingest":
         build_database(

@@ -36,15 +36,23 @@ The `poetry-assistant` executable exposes the following subcommands:
 Create or refresh the SQLite database by downloading the source corpora:
 
 ```bash
-poetry-assistant ingest --database data/poetry.db
+poetry-assistant ingest
 ```
 
-The CLI defaults to storing data in `poetry_assistant.db` in the current directory. If you choose a different location, such as `data/poetry.db` above, pass the same `--database` flag to subsequent commands. The ingestion command downloads the CMU Pronouncing Dictionary (~3 MB) and the WordNet lexicon (~30 MB via NLTK) and stores structured records in the requested database file. Use `--cmu` to point at a local CMU file, or `--no-wordnet` to skip definition enrichment.
+By default the assistant stores its data at
+`$XDG_DATA_HOME/poetry_assistant/poetry_assistant.db`, or
+`~/.local/share/poetry_assistant/poetry_assistant.db` if the XDG environment
+variable is not set. Set the `POETRY_ASSISTANT_DB` environment variable or pass
+`--database /path/to/file.db` to override the location. The ingestion command
+downloads the CMU Pronouncing Dictionary (~3 MB) and the WordNet lexicon (~30
+MB via NLTK) and stores structured records in the requested database file. Use
+`--cmu` to point at a local CMU file, or `--no-wordnet` to skip definition
+enrichment.
 
 ## Searching the lexicon
 
 ```bash
-poetry-assistant search "AE1 T" --type rhyme --syllables 1 --limit 10 --database data/poetry.db
+poetry-assistant search "AE1 T" --type rhyme --syllables 1 --limit 10
 ```
 
 Key options:
@@ -62,7 +70,7 @@ Results include each word’s pronunciation, stress signature, similarity score 
 ## Rhyming with entire lines
 
 ```bash
-poetry-assistant rhymes-with "I wrote a clever rap" --max-syllables 3 --database data/poetry.db
+poetry-assistant rhymes-with "I wrote a clever rap" --max-syllables 3
 ```
 
 The assistant tokenises the final words of the line, retrieves pronunciations, and returns rhyme suggestions for the last one through N syllables. Near-rhyme parameters (`--max-distance`, `--min-similarity`, `--pos`) mirror the search command.
@@ -70,7 +78,7 @@ The assistant tokenises the final words of the line, retrieves pronunciations, a
 ## Inspecting individual entries
 
 ```bash
-poetry-assistant word serendipity --database data/poetry.db
+poetry-assistant word serendipity
 ```
 
 Displays all pronunciations along with syllable counts, stress patterns, and the associated definitions and synonyms.
