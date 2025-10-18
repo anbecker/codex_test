@@ -4,7 +4,7 @@ from __future__ import annotations
 import fnmatch
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Iterator, List, Optional, Sequence, Tuple
+from typing import Iterator, List, Optional, Sequence, Tuple, Union
 
 from .phonetics import is_vowel, strip_stress, tokens
 
@@ -230,16 +230,35 @@ class SyllablePattern:
         return syllable.stress in self.stress
 
 
-def parse_syllable_pattern(pattern: str) -> List[SyllablePattern]:
+@dataclass(frozen=True)
+class WildcardSyllable:
+    """Wildcard that matches any single syllable."""
+
+
+@dataclass(frozen=True)
+class WildcardSequence:
+    """Wildcard that matches zero or more syllables."""
+
+
+PatternElement = Union[SyllablePattern, WildcardSyllable, WildcardSequence]
+
+
+def parse_syllable_pattern(pattern: str) -> List[PatternElement]:
     """Parse a multi-syllable pattern string."""
 
     tokens = _tokenize(pattern)
-    syllables: List[SyllablePattern] = []
+    syllables: List[PatternElement] = []
     for token in tokens:
         stress_values: Optional[set[str]] = None
         core = token.strip()
         if not core:
             raise ValueError("Empty syllable pattern segment")
+        if core == "*":
+            syllables.append(WildcardSyllable())
+            continue
+        if core == "**":
+            syllables.append(WildcardSequence())
+            continue
         if "-" not in core:
             raise ValueError(f"Invalid syllable pattern '{token}': missing '-' separator")
         onset_text, remainder = core.split("-", 1)
@@ -266,7 +285,7 @@ def parse_syllable_pattern(pattern: str) -> List[SyllablePattern]:
 
 def find_syllable_matches(
     syllables: Sequence[Syllable],
-    pattern: Sequence[SyllablePattern],
+    pattern: Sequence[PatternElement],
     *,
     contains: bool = False,
     ignore_stress: bool = False,
@@ -275,27 +294,55 @@ def find_syllable_matches(
 
     if not pattern:
         return [(0, 0)] if not syllables else [(0, len(syllables))]
-    required = len(pattern)
-    if required > len(syllables):
-        return []
     matches: List[Tuple[int, int]] = []
-    if not contains and required != len(syllables):
-        return []
-    start_indices: Iterator[int]
+
+    @lru_cache(maxsize=None)
+    def _match(start: int, index: int) -> Tuple[int, ...]:
+        if index == len(pattern):
+            return (start,)
+        token = pattern[index]
+        results: List[int] = []
+        if isinstance(token, WildcardSequence):
+            for next_start in range(start, len(syllables) + 1):
+                results.extend(_match(next_start, index + 1))
+            return tuple(dict.fromkeys(results))
+        if start >= len(syllables):
+            return tuple()
+        if isinstance(token, WildcardSyllable):
+            return _match(start + 1, index + 1)
+        if token.matches(syllables[start], ignore_stress=ignore_stress):
+            return _match(start + 1, index + 1)
+        return tuple()
+
+    candidate_starts: Iterator[int]
     if contains:
-        start_indices = range(0, len(syllables) - required + 1)
+        candidate_starts = iter(range(0, len(syllables) + 1))
     else:
-        start_indices = iter((0,))
-    for start in start_indices:
-        window = syllables[start : start + required]
-        if all(p.matches(s, ignore_stress=ignore_stress) for p, s in zip(pattern, window)):
-            matches.append((start, start + required))
-    return matches
+        candidate_starts = iter((0,))
+    for start in candidate_starts:
+        for end in _match(start, 0):
+            if not contains and start != 0:
+                continue
+            if not contains and end != len(syllables):
+                continue
+            if end < start:
+                continue
+            if end > len(syllables):
+                continue
+            matches.append((start, end))
+    # Remove duplicates while preserving order
+    unique: List[Tuple[int, int]] = []
+    seen = set()
+    for match in matches:
+        if match not in seen:
+            seen.add(match)
+            unique.append(match)
+    return unique
 
 
 def matches_syllable_pattern(
     syllables: Sequence[Syllable],
-    pattern: Sequence[SyllablePattern],
+    pattern: Sequence[PatternElement],
     *,
     contains: bool = False,
     ignore_stress: bool = False,

@@ -102,6 +102,11 @@ def main(argv: Optional[list[str]] = None) -> None:
     search_parser.add_argument("--definition", help="Search for words whose definition contains this text")
     search_parser.add_argument("--synonym", help="Search using synonym text")
     search_parser.add_argument("--limit", type=int, default=25, help="Maximum number of results")
+    search_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Show all matching results (overrides --limit)",
+    )
 
     word_parser = subparsers.add_parser(
         "word", parents=[common], help="Show pronunciations and definitions for a word"
@@ -154,7 +159,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             part_of_speech=args.pos,
             definition_query=args.definition,
             synonym_query=args.synonym,
-            limit=args.limit,
+            limit=None if getattr(args, "all", False) else args.limit,
         )
         engine = SearchEngine(db)
         results = engine.search(options)

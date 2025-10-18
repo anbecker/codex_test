@@ -9,7 +9,12 @@ from typing import List, Optional, Sequence, Tuple
 from .database import PoetryDatabase
 from .models import SearchResult
 from .phonetics import Pronunciation, similarity, tokens
-from .syllables import SyllablePattern, find_syllable_matches, parse_syllable_pattern, syllabify
+from .syllables import (
+    PatternElement,
+    find_syllable_matches,
+    parse_syllable_pattern,
+    syllabify,
+)
 
 
 MAX_PRECOMPUTED_RHYME_KEY = 4
@@ -29,7 +34,7 @@ class SearchOptions:
     part_of_speech: Optional[str] = None
     definition_query: Optional[str] = None
     synonym_query: Optional[str] = None
-    limit: int = 50
+    limit: Optional[int] = 50
 
 
 class SearchEngine:
@@ -45,7 +50,7 @@ class SearchEngine:
             synonym_query=options.synonym_query,
         )
         results: List[SearchResult] = []
-        syllable_pattern: Optional[List[SyllablePattern]] = None
+        syllable_pattern: Optional[List[PatternElement]] = None
         if options.pattern_type == "syllable":
             syllable_pattern = parse_syllable_pattern(options.pattern or "")
         for row in rows:
@@ -107,12 +112,18 @@ class SearchEngine:
                 matched_syllables=match_span,
             )
             results.append(result)
-            if len(results) >= options.limit and not options.pattern:
+            if options.limit is not None and len(results) >= options.limit and not options.pattern:
                 break
-        if options.pattern:
-            results.sort(key=lambda r: (-(r.similarity or 0.0), r.word))
-        self._attach_definitions(results[: options.limit])
-        return results[: options.limit]
+        results.sort(key=self._result_sort_key)
+        limit = options.limit
+        limited = results if limit is None else results[:limit]
+        self._attach_definitions(limited)
+        return limited
+
+    @staticmethod
+    def _result_sort_key(result: SearchResult) -> tuple:
+        score = result.similarity if result.similarity is not None else float("-inf")
+        return (-result.syllable_count, -score, result.word)
 
     # ------------------------------------------------------------------
     def _sequence_from_row(self, row, options: SearchOptions) -> Optional[str]:

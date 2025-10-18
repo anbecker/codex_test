@@ -63,7 +63,7 @@ class RhymeAssistant:
                     formatted = _format_match(match)
                     if len(results[syllables]) < max_results:
                         results[syllables].append(formatted)
-        return dict(sorted(results.items()))
+        return dict(sorted(results.items(), reverse=True))
 
     def _line_pronunciations(self, line: str) -> List[Tuple[str, Pronunciation]]:
         words = WORD_RE.findall(line.lower())
