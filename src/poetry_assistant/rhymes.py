@@ -28,7 +28,7 @@ class RhymeAssistant:
         self,
         line: str,
         max_syllables: int = 3,
-        max_results: int = 20,
+        max_results: Optional[int] = 20,
         max_distance: Optional[int] = None,
         min_similarity: Optional[float] = None,
         part_of_speech: Optional[str] = None,
@@ -61,14 +61,14 @@ class RhymeAssistant:
                     if key in seen:
                         continue
                     seen.add(key)
-                    if len(results[syllables]) < max_results:
+                    if max_results is None or len(results[syllables]) < max_results:
                         results[syllables].append(match)
         return dict(sorted(results.items(), reverse=True))
 
     def perfect_rhymes(
         self,
         word: str,
-        max_results: int = 25,
+        max_results: Optional[int] = 25,
         part_of_speech: Optional[str] = None,
     ) -> Dict[str, List[SearchResult]]:
         """Return perfect rhyme suggestions keyed by pronunciation."""

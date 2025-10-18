@@ -124,6 +124,11 @@ def main(argv: Optional[list[str]] = None) -> None:
     rhyme_parser.add_argument("--min-similarity", type=float, help="Minimum similarity score for near rhymes")
     rhyme_parser.add_argument("--pos", help="Part of speech filter for rhymes")
     rhyme_parser.add_argument("--limit", type=int, default=15, help="Maximum suggestions per syllable count")
+    rhyme_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Show all matching rhymes (overrides --limit)",
+    )
 
     perfect_parser = subparsers.add_parser(
         "perfect-rhyme", parents=[common], help="Find words with perfect rhymes for the target word"
@@ -131,6 +136,11 @@ def main(argv: Optional[list[str]] = None) -> None:
     perfect_parser.add_argument("word", help="Target word to rhyme")
     perfect_parser.add_argument("--pos", help="Part of speech filter for rhymes")
     perfect_parser.add_argument("--limit", type=int, default=15, help="Maximum suggestions per pronunciation")
+    perfect_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Show all perfect rhymes (overrides --limit)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -203,10 +213,11 @@ def main(argv: Optional[list[str]] = None) -> None:
                         print(base)
     elif args.command == "rhymes-with":
         assistant = RhymeAssistant(db)
+        limit = None if getattr(args, "all", False) else args.limit
         results = assistant.suggest_rhymes(
             line=args.line,
             max_syllables=args.max_syllables,
-            max_results=args.limit,
+            max_results=limit,
             max_distance=args.max_distance,
             min_similarity=args.min_similarity,
             part_of_speech=args.pos,
@@ -220,9 +231,10 @@ def main(argv: Optional[list[str]] = None) -> None:
                 print("  (no matches)")
     elif args.command == "perfect-rhyme":
         assistant = RhymeAssistant(db)
+        limit = None if getattr(args, "all", False) else args.limit
         matches = assistant.perfect_rhymes(
             word=args.word,
-            max_results=args.limit,
+            max_results=limit,
             part_of_speech=args.pos,
         )
         if not matches:

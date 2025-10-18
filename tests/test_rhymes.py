@@ -21,3 +21,16 @@ def test_perfect_rhyme(sample_db):
     assert any(match.word == "blazing" for match in matches)
     assert all(match.word != "amazing" for match in matches)
 
+
+def test_rhyme_assistant_unbounded_results(sample_db):
+    assistant = RhymeAssistant(sample_db)
+    results = assistant.suggest_rhymes("The curious cat", max_results=None)
+    assert results
+    assert any(matches for matches in results.values())
+
+
+def test_perfect_rhyme_unbounded_results(sample_db):
+    assistant = RhymeAssistant(sample_db)
+    suggestions = assistant.perfect_rhymes("amazing", max_results=None)
+    assert suggestions["AH0 M EY1 Z IH0 NG"]
+

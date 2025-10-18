@@ -76,6 +76,7 @@ poetry-assistant rhymes-with "I wrote a clever rap" --max-syllables 3
 ```
 
 The assistant tokenises the final words of the line, retrieves pronunciations, and returns rhyme suggestions for the last one through N syllables. Near-rhyme parameters (`--max-distance`, `--min-similarity`, `--pos`) mirror the search command.
+Pass `--all` to list every rhyme candidate for each syllable count instead of respecting the per-group `--limit`.
 
 ## Finding perfect rhymes
 
@@ -84,6 +85,7 @@ poetry-assistant perfect-rhyme amazing
 ```
 
 The perfect rhyme search starts at the final stressed syllable of each pronunciation for the target word. The vowel and coda of that syllable must match, and every subsequent syllable (including onsets) must match exactly, yielding textbook perfect rhymes.
+Use `--all` to disable the per-pronunciation limit and show every matching word.
 
 ## Inspecting individual entries
 
