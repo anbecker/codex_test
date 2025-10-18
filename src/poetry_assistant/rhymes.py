@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
 from .database import PoetryDatabase
+from .models import SearchResult
 from .phonetics import Pronunciation
 from .search import SearchEngine, SearchOptions
 
@@ -31,11 +32,11 @@ class RhymeAssistant:
         max_distance: Optional[int] = None,
         min_similarity: Optional[float] = None,
         part_of_speech: Optional[str] = None,
-    ) -> Dict[int, List[str]]:
+    ) -> Dict[int, List[SearchResult]]:
         """Suggest rhyming words for the final syllables of ``line``."""
 
         candidates = self._line_pronunciations(line)
-        results: Dict[int, List[str]] = defaultdict(list)
+        results: Dict[int, List[SearchResult]] = defaultdict(list)
         seen = set()
         for word_text, pron in candidates:
             syllable_count = pron.syllable_count
@@ -60,9 +61,8 @@ class RhymeAssistant:
                     if key in seen:
                         continue
                     seen.add(key)
-                    formatted = _format_match(match)
                     if len(results[syllables]) < max_results:
-                        results[syllables].append(formatted)
+                        results[syllables].append(match)
         return dict(sorted(results.items(), reverse=True))
 
     def perfect_rhymes(
@@ -70,14 +70,14 @@ class RhymeAssistant:
         word: str,
         max_results: int = 25,
         part_of_speech: Optional[str] = None,
-    ) -> Dict[str, List[str]]:
+    ) -> Dict[str, List[SearchResult]]:
         """Return perfect rhyme suggestions keyed by pronunciation."""
 
         rows = self.db.pronunciations_for_word(word)
         if not rows:
             return {}
         target_ids = {int(row["word_id"]) for row in rows}
-        suggestions: Dict[str, List[str]] = {}
+        suggestions: Dict[str, List[SearchResult]] = {}
         for row in rows:
             pronunciation = Pronunciation(tuple(row["pronunciation"].split()))
             key = pronunciation.perfect_rhyme_key()
@@ -89,9 +89,8 @@ class RhymeAssistant:
                 limit=max_results,
                 exclude_word_ids=target_ids,
             )
-            formatted = [_format_match(match) for match in matches]
-            suggestions[pronunciation.text] = formatted
-        return suggestions
+            suggestions[pronunciation.text] = matches
+        return dict(sorted(suggestions.items()))
 
     def _line_pronunciations(self, line: str) -> List[Tuple[str, Pronunciation]]:
         words = WORD_RE.findall(line.lower())
@@ -104,17 +103,4 @@ class RhymeAssistant:
             if pronunciations:
                 break
         return pronunciations
-
-
-def _format_match(result) -> str:
-    pieces = [result.word]
-    if result.similarity is not None:
-        pieces.append(f"(score={result.similarity:.2f})")
-    stresses = result.stress_pattern or ""
-    pieces.append(f"[{stresses}] {result.pronunciation}")
-    if result.definitions:
-        definition = result.definitions[0]
-        gloss = definition.definition
-        pieces.append(f"- {gloss}")
-    return " ".join(pieces)
 

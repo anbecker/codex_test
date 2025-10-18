@@ -205,11 +205,12 @@ def main(argv: Optional[list[str]] = None) -> None:
             min_similarity=args.min_similarity,
             part_of_speech=args.pos,
         )
-        for syllables, suggestions in results.items():
+        for syllables in sorted(results.keys(), reverse=True):
+            suggestions = results[syllables]
             print(f"Last {syllables} syllable(s):")
-            for suggestion in suggestions:
-                print(f"  {suggestion}")
-            if not suggestions:
+            if suggestions:
+                _print_results(suggestions)
+            else:
                 print("  (no matches)")
     elif args.command == "perfect-rhyme":
         assistant = RhymeAssistant(db)
@@ -225,8 +226,7 @@ def main(argv: Optional[list[str]] = None) -> None:
             for pronunciation, suggestions in matches.items():
                 print(f"Pronunciation {pronunciation}:")
                 if suggestions:
-                    for suggestion in suggestions:
-                        print(f"  {suggestion}")
+                    _print_results(suggestions)
                 else:
                     print("  (no matches)")
     db.close()

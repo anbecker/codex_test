@@ -10,7 +10,7 @@ def test_rhyme_assistant(sample_db):
     keys = list(results.keys())
     assert keys == sorted(keys, reverse=True)
     assert 1 in results
-    assert any("bat" in suggestion for suggestion in results[1])
+    assert any(match.word == "bat" for match in results[1])
 
 
 def test_perfect_rhyme(sample_db):
@@ -18,6 +18,6 @@ def test_perfect_rhyme(sample_db):
     suggestions = assistant.perfect_rhymes("amazing", max_results=5)
     assert "AH0 M EY1 Z IH0 NG" in suggestions
     matches = suggestions["AH0 M EY1 Z IH0 NG"]
-    assert any("blazing" in suggestion for suggestion in matches)
-    assert all("amazing" not in suggestion for suggestion in matches)
+    assert any(match.word == "blazing" for match in matches)
+    assert all(match.word != "amazing" for match in matches)
 
