@@ -68,4 +68,10 @@ def test_word_command_prints_syllables(sample_db, capsys):
     cli.main(["--database", str(sample_db.path), "word", "spider"])
     captured = capsys.readouterr().out
     assert "syllabified:" in captured
-    assert "S P-AY[1]/- | D-ER[0]/-" in captured
+    assert "(S P)-AY[1]/ | D-ER[0]/" in captured
+
+
+def test_word_command_formats_complex_clusters(sample_db, capsys):
+    cli.main(["--database", str(sample_db.path), "word", "amazing"])
+    captured = capsys.readouterr().out
+    assert "-AH[0]/ | M-EY[1]/ | Z-IH[0]/(N G)" in captured

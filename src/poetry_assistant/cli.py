@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence
 
 from .database import PoetryDatabase
 from .ingest import build_database
@@ -266,13 +266,28 @@ def _print_results(results: list[SearchResult]) -> None:
         print(json.dumps(dict(headers=headers, rows=rows), indent=2))
 
 
+
+def _format_cluster(cluster: Sequence[str]) -> str:
+    display_tokens: list[str] = []
+    for phoneme in cluster:
+        if phoneme == "NG":
+            display_tokens.extend(("N", "G"))
+        else:
+            display_tokens.append(phoneme)
+    if not display_tokens:
+        return ""
+    if len(display_tokens) == 1:
+        return display_tokens[0]
+    return f"({' '.join(display_tokens)})"
+
+
 def _describe_syllables(pronunciation: Pronunciation) -> str:
     syllables = syllabify(pronunciation.phonemes)
     parts: list[str] = []
     for syllable in syllables:
-        onset = syllable.onset_text or "-"
+        onset = _format_cluster(syllable.onset)
         vowel = strip_stress(syllable.vowel)
-        coda = syllable.coda_text or "-"
+        coda = _format_cluster(syllable.coda)
         parts.append(f"{onset}-{vowel}[{syllable.stress}]/{coda}")
     return " | ".join(parts)
 
