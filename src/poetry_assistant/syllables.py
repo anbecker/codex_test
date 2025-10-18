@@ -303,7 +303,12 @@ def find_syllable_matches(
         token = pattern[index]
         results: List[int] = []
         if isinstance(token, WildcardSequence):
-            for next_start in range(start, len(syllables) + 1):
+            # Allow the wildcard sequence to consume zero syllables before
+            # exploring longer spans. This preserves the intended "zero or
+            # more" semantics without requiring callers to add an explicit
+            # single-syllable wildcard to cover the empty case.
+            results.extend(_match(start, index + 1))
+            for next_start in range(start + 1, len(syllables) + 1):
                 results.extend(_match(next_start, index + 1))
             return tuple(dict.fromkeys(results))
         if start >= len(syllables):

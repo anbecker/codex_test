@@ -97,3 +97,12 @@ def test_double_wildcard_spans_variable_prefix():
     syllables = syllabify("AH0 B AW1 T")
     pattern = parse_syllable_pattern("** *-AW[1]/T")
     assert matches_syllable_pattern(syllables, pattern)
+
+
+def test_double_wildcard_allows_zero_length_match():
+    syllables = syllabify("AH0 S")
+    pattern = parse_syllable_pattern("** *-AH[0]/S")
+    assert find_syllable_matches(syllables, pattern) == [(0, 1)]
+
+    zero_only = find_syllable_matches(syllables, parse_syllable_pattern("**"), contains=True)
+    assert (1, 1) in zero_only
