@@ -63,9 +63,10 @@ Key options:
 * `--max-distance` / `--min-similarity` – enable near-match scoring by phoneme edit distance.
 * `--stress` – wildcard mask over stress digits (e.g. `1*0` to require stressed then unstressed syllables).
 * `--ignore-syllable-stress` – ignore stress differences when evaluating syllable patterns.
+* `--all` – list every matching result instead of truncating to the `--limit` value.
 * `--pos`, `--definition`, `--synonym` – filter by lexical metadata from WordNet.
 
-Results include each word’s pronunciation, stress signature, similarity score (if applicable), the syllable range that matched (for syllable searches), and the first matching definition. See `docs/syllable_pattern_guide.md` for the full pattern syntax and examples.
+Results include each word’s pronunciation, stress signature, similarity score (if applicable), the syllable range that matched (for syllable searches), and the first matching definition. Results are ordered from the highest syllable count down, breaking ties with the best match scores. See `docs/syllable_pattern_guide.md` for the full pattern syntax and examples.
 
 ## Rhyming with entire lines
 

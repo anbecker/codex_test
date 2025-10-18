@@ -1,6 +1,8 @@
 import _bootstrap  # noqa: F401
 
 from poetry_assistant.syllables import (
+    WildcardSequence,
+    WildcardSyllable,
     find_syllable_matches,
     matches_syllable_pattern,
     parse_syllable_pattern,
@@ -76,3 +78,31 @@ def test_vowel_alternatives_match_multiple_words():
     mend_the_gap = syllabify("M EH1 N D DH AH0 G AE1 P")
     assert matches_syllable_pattern(clever_rap, pattern)
     assert matches_syllable_pattern(mend_the_gap, pattern)
+
+
+def test_full_syllable_wildcard_and_sequence_tokens():
+    pattern = parse_syllable_pattern("* **")
+    assert isinstance(pattern[0], WildcardSyllable)
+    assert isinstance(pattern[1], WildcardSequence)
+
+
+def test_single_syllable_wildcard_matches_any_syllable():
+    syllables = syllabify("B AH0 T AH0 K AH0 S")
+    pattern = parse_syllable_pattern("* *-AH[0]/* *-AH[0]/S")
+    matches = find_syllable_matches(syllables, pattern)
+    assert matches == [(0, 3)]
+
+
+def test_double_wildcard_spans_variable_prefix():
+    syllables = syllabify("AH0 B AW1 T")
+    pattern = parse_syllable_pattern("** *-AW[1]/T")
+    assert matches_syllable_pattern(syllables, pattern)
+
+
+def test_double_wildcard_allows_zero_length_match():
+    syllables = syllabify("AH0 S")
+    pattern = parse_syllable_pattern("** *-AH[0]/S")
+    assert find_syllable_matches(syllables, pattern) == [(0, 1)]
+
+    zero_only = find_syllable_matches(syllables, parse_syllable_pattern("**"), contains=True)
+    assert (1, 1) in zero_only

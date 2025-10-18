@@ -88,3 +88,41 @@ def test_three_syllable_vowel_options(sample_db):
     results = engine.search(options)
     words = {result.word for result in results}
     assert {"heavenly", "seventeen", "memory"}.issubset(words)
+
+
+def test_syllable_wildcards_expand_search(sample_db):
+    bahas = sample_db.add_word("bahas")
+    sample_db.add_pronunciation(bahas, "B AH0 T AH0 K AH0 S".split())
+    engine = SearchEngine(sample_db)
+
+    three_pattern = SearchOptions(
+        pattern="* *-AH[0]/* *-AH[0]/S",
+        pattern_type="syllable",
+        limit=10,
+    )
+    results = engine.search(three_pattern)
+    assert any(result.word == "bahas" for result in results)
+
+    flexible_pattern = SearchOptions(
+        pattern="** *-AH[0]/S",
+        pattern_type="syllable",
+        limit=10,
+    )
+    flex_results = engine.search(flexible_pattern)
+    assert any(result.word == "bahas" for result in flex_results)
+
+
+def test_search_results_sorted_by_syllable_count(sample_db):
+    engine = SearchEngine(sample_db)
+    options = SearchOptions(pattern_type="rhyme", syllables=1, limit=10)
+    results = engine.search(options)
+    counts = [result.syllable_count for result in results]
+    assert counts == sorted(counts, reverse=True)
+
+
+def test_limit_none_returns_all_results(sample_db):
+    engine = SearchEngine(sample_db)
+    options = SearchOptions(pattern_type="rhyme", syllables=1, limit=None)
+    results = engine.search(options)
+    total = sum(1 for _ in sample_db.iter_pronunciations())
+    assert len(results) == total

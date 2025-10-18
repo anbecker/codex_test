@@ -49,6 +49,19 @@ This pattern matches the pronunciation of “spider”.
   sequence in `[]` or `()`, or use `_`, `.` or `+` as separators. For example,
   `[K R]-OW[1]` and `K_R-OW[1]` both specify an onset of `K R`.
 
+### Whole-syllable wildcards
+
+* Use `*` as its own token to match any single syllable, regardless of onset,
+  vowel, coda, or stress.
+* Use `**` as its own token to match zero or more syllables. Combine with other
+  tokens to anchor the pattern at the start or end of a word.
+* Examples:
+  * `* *-AH[0]/* *-AH[0]/S` – matches three-syllable words whose last two
+    syllables rhyme with unstressed `AH` vowels ending in `S` (e.g., **bahas** in
+    the sample data).
+  * `** *-AH[0]/S` – matches any word ending in an unstressed `AH` vowel with an
+    `S` coda, regardless of the number of preceding syllables.
+
 ### Vowel alternatives
 
 * Provide multiple vowel options by separating them with `|`, commas, or
@@ -108,6 +121,8 @@ poetry-assistant search "[S P]-AY[1] D-ER[0]" --type syllable
 poetry-assistant search "*-AW[1]/*" --type syllable --contains
 poetry-assistant search "D-ER*[1]" --type syllable --contains --ignore-syllable-stress
 poetry-assistant search "*-EH[12]/* *-(AH|ER)[0]/* *-IY[012]/*" --type syllable
+poetry-assistant search "* *-AH[0]/* *-AH[0]/S" --type syllable
+poetry-assistant search "** *-AH[0]/* *-AH[0]/S" --type syllable
 ```
 
 The tabulated output shows the syllable range that satisfied the pattern in the
