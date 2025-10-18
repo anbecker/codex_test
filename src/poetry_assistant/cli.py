@@ -123,6 +123,13 @@ def main(argv: Optional[list[str]] = None) -> None:
     rhyme_parser.add_argument("--pos", help="Part of speech filter for rhymes")
     rhyme_parser.add_argument("--limit", type=int, default=15, help="Maximum suggestions per syllable count")
 
+    perfect_parser = subparsers.add_parser(
+        "perfect-rhyme", parents=[common], help="Find words with perfect rhymes for the target word"
+    )
+    perfect_parser.add_argument("word", help="Target word to rhyme")
+    perfect_parser.add_argument("--pos", help="Part of speech filter for rhymes")
+    perfect_parser.add_argument("--limit", type=int, default=15, help="Maximum suggestions per pronunciation")
+
     args = parser.parse_args(argv)
 
     configure_logging(bool(getattr(args, "verbose", False)))
@@ -204,6 +211,24 @@ def main(argv: Optional[list[str]] = None) -> None:
                 print(f"  {suggestion}")
             if not suggestions:
                 print("  (no matches)")
+    elif args.command == "perfect-rhyme":
+        assistant = RhymeAssistant(db)
+        matches = assistant.perfect_rhymes(
+            word=args.word,
+            max_results=args.limit,
+            part_of_speech=args.pos,
+        )
+        if not matches:
+            print(f"No perfect rhymes found for {args.word}")
+        else:
+            print(f"Perfect rhymes for {args.word}:")
+            for pronunciation, suggestions in matches.items():
+                print(f"Pronunciation {pronunciation}:")
+                if suggestions:
+                    for suggestion in suggestions:
+                        print(f"  {suggestion}")
+                else:
+                    print("  (no matches)")
     db.close()
 
 

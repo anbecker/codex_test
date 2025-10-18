@@ -65,6 +65,34 @@ class RhymeAssistant:
                         results[syllables].append(formatted)
         return dict(sorted(results.items(), reverse=True))
 
+    def perfect_rhymes(
+        self,
+        word: str,
+        max_results: int = 25,
+        part_of_speech: Optional[str] = None,
+    ) -> Dict[str, List[str]]:
+        """Return perfect rhyme suggestions keyed by pronunciation."""
+
+        rows = self.db.pronunciations_for_word(word)
+        if not rows:
+            return {}
+        target_ids = {int(row["word_id"]) for row in rows}
+        suggestions: Dict[str, List[str]] = {}
+        for row in rows:
+            pronunciation = Pronunciation(tuple(row["pronunciation"].split()))
+            key = pronunciation.perfect_rhyme_key()
+            if not key:
+                continue
+            matches = self.search.perfect_rhyme_matches(
+                key,
+                part_of_speech=part_of_speech,
+                limit=max_results,
+                exclude_word_ids=target_ids,
+            )
+            formatted = [_format_match(match) for match in matches]
+            suggestions[pronunciation.text] = formatted
+        return suggestions
+
     def _line_pronunciations(self, line: str) -> List[Tuple[str, Pronunciation]]:
         words = WORD_RE.findall(line.lower())
         pronunciations: List[Tuple[str, Pronunciation]] = []
