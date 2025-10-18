@@ -268,12 +268,7 @@ def _print_results(results: list[SearchResult]) -> None:
 
 
 def _format_cluster(cluster: Sequence[str]) -> str:
-    display_tokens: list[str] = []
-    for phoneme in cluster:
-        if phoneme == "NG":
-            display_tokens.extend(("N", "G"))
-        else:
-            display_tokens.append(phoneme)
+    display_tokens = list(cluster)
     if not display_tokens:
         return ""
     if len(display_tokens) == 1:
