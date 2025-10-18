@@ -14,6 +14,16 @@ def test_pronunciation_features():
     assert pron.terminal_consonants() == "T"
 
 
+def test_perfect_rhyme_key_uses_last_primary_stress():
+    pron = Pronunciation(("P", "AH1", "S", "T", "EY2", "SH", "AH0", "N"))
+    assert pron.perfect_rhyme_key() == "AH1 S T EY2 SH AH0 N"
+
+
+def test_perfect_rhyme_key_requires_primary_stress():
+    pron = Pronunciation(("B", "AH0", "T", "ER0", "F", "L", "AY2"))
+    assert pron.perfect_rhyme_key() is None
+
+
 def test_similarity_metrics():
     left = ["AE1", "T"]
     right = ["AE1", "D"]
