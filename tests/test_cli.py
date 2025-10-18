@@ -62,3 +62,10 @@ def test_default_database_path_uses_xdg_data_home(monkeypatch, tmp_path):
     resolved = cli._default_database_path()
     expected = tmp_path / "xdg" / "poetry_assistant" / "poetry_assistant.db"
     assert resolved == expected
+
+
+def test_word_command_prints_syllables(sample_db, capsys):
+    cli.main(["--database", str(sample_db.path), "word", "spider"])
+    captured = capsys.readouterr().out
+    assert "syllabified:" in captured
+    assert "S P-AY[1]/- | D-ER[0]/-" in captured

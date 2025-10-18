@@ -11,8 +11,10 @@ from typing import Optional
 from .database import PoetryDatabase
 from .ingest import build_database
 from .models import SearchResult
+from .phonetics import Pronunciation, strip_stress
 from .rhymes import RhymeAssistant
 from .search import SearchEngine, SearchOptions
+from .syllables import syllabify
 
 try:
     from tabulate import tabulate
@@ -179,7 +181,11 @@ def main(argv: Optional[list[str]] = None) -> None:
         else:
             print(f"Pronunciations for {args.word}:")
             for pron in pronunciations:
-                print(f"  - {pron.text} (syllables={pron.syllable_count}, stress={pron.stress_pattern})")
+                syllable_description = _describe_syllables(pron)
+                print(
+                    f"  - {pron.text} (syllables={pron.syllable_count}, stress={pron.stress_pattern})"
+                )
+                print(f"    syllabified: {syllable_description}")
             # attach definitions
             word_rows = db.pronunciations_for_word(args.word)
             if word_rows:
@@ -258,6 +264,17 @@ def _print_results(results: list[SearchResult]) -> None:
         print(tabulate(rows, headers=headers))
     else:
         print(json.dumps(dict(headers=headers, rows=rows), indent=2))
+
+
+def _describe_syllables(pronunciation: Pronunciation) -> str:
+    syllables = syllabify(pronunciation.phonemes)
+    parts: list[str] = []
+    for syllable in syllables:
+        onset = syllable.onset_text or "-"
+        vowel = strip_stress(syllable.vowel)
+        coda = syllable.coda_text or "-"
+        parts.append(f"{onset}-{vowel}[{syllable.stress}]/{coda}")
+    return " | ".join(parts)
 
 
 if __name__ == "__main__":  # pragma: no cover

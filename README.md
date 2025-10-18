@@ -91,7 +91,7 @@ The perfect rhyme search starts at the final stressed syllable of each pronuncia
 poetry-assistant word serendipity
 ```
 
-Displays all pronunciations along with syllable counts, stress patterns, and the associated definitions and synonyms.
+Displays all pronunciations along with syllable counts, stress patterns, a syllabified breakdown of each pronunciation, and the associated definitions and synonyms.
 
 ## Frequently asked questions
 
