@@ -6,13 +6,15 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Sequence
 
 from .database import PoetryDatabase
 from .ingest import build_database
 from .models import SearchResult
+from .phonetics import Pronunciation, strip_stress
 from .rhymes import RhymeAssistant
 from .search import SearchEngine, SearchOptions
+from .syllables import syllabify
 
 try:
     from tabulate import tabulate
@@ -122,6 +124,23 @@ def main(argv: Optional[list[str]] = None) -> None:
     rhyme_parser.add_argument("--min-similarity", type=float, help="Minimum similarity score for near rhymes")
     rhyme_parser.add_argument("--pos", help="Part of speech filter for rhymes")
     rhyme_parser.add_argument("--limit", type=int, default=15, help="Maximum suggestions per syllable count")
+    rhyme_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Show all matching rhymes (overrides --limit)",
+    )
+
+    perfect_parser = subparsers.add_parser(
+        "perfect-rhyme", parents=[common], help="Find words with perfect rhymes for the target word"
+    )
+    perfect_parser.add_argument("word", help="Target word to rhyme")
+    perfect_parser.add_argument("--pos", help="Part of speech filter for rhymes")
+    perfect_parser.add_argument("--limit", type=int, default=15, help="Maximum suggestions per pronunciation")
+    perfect_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Show all perfect rhymes (overrides --limit)",
+    )
 
     args = parser.parse_args(argv)
 
@@ -172,7 +191,11 @@ def main(argv: Optional[list[str]] = None) -> None:
         else:
             print(f"Pronunciations for {args.word}:")
             for pron in pronunciations:
-                print(f"  - {pron.text} (syllables={pron.syllable_count}, stress={pron.stress_pattern})")
+                syllable_description = _describe_syllables(pron)
+                print(
+                    f"  - {pron.text} (syllables={pron.syllable_count}, stress={pron.stress_pattern})"
+                )
+                print(f"    syllabified: {syllable_description}")
             # attach definitions
             word_rows = db.pronunciations_for_word(args.word)
             if word_rows:
@@ -190,20 +213,40 @@ def main(argv: Optional[list[str]] = None) -> None:
                         print(base)
     elif args.command == "rhymes-with":
         assistant = RhymeAssistant(db)
+        limit = None if getattr(args, "all", False) else args.limit
         results = assistant.suggest_rhymes(
             line=args.line,
             max_syllables=args.max_syllables,
-            max_results=args.limit,
+            max_results=limit,
             max_distance=args.max_distance,
             min_similarity=args.min_similarity,
             part_of_speech=args.pos,
         )
-        for syllables, suggestions in results.items():
+        for syllables in sorted(results.keys(), reverse=True):
+            suggestions = results[syllables]
             print(f"Last {syllables} syllable(s):")
-            for suggestion in suggestions:
-                print(f"  {suggestion}")
-            if not suggestions:
+            if suggestions:
+                _print_results(suggestions)
+            else:
                 print("  (no matches)")
+    elif args.command == "perfect-rhyme":
+        assistant = RhymeAssistant(db)
+        limit = None if getattr(args, "all", False) else args.limit
+        matches = assistant.perfect_rhymes(
+            word=args.word,
+            max_results=limit,
+            part_of_speech=args.pos,
+        )
+        if not matches:
+            print(f"No perfect rhymes found for {args.word}")
+        else:
+            print(f"Perfect rhymes for {args.word}:")
+            for pronunciation, suggestions in matches.items():
+                print(f"Pronunciation {pronunciation}:")
+                if suggestions:
+                    _print_results(suggestions)
+                else:
+                    print("  (no matches)")
     db.close()
 
 
@@ -233,6 +276,27 @@ def _print_results(results: list[SearchResult]) -> None:
         print(tabulate(rows, headers=headers))
     else:
         print(json.dumps(dict(headers=headers, rows=rows), indent=2))
+
+
+
+def _format_cluster(cluster: Sequence[str]) -> str:
+    display_tokens = list(cluster)
+    if not display_tokens:
+        return ""
+    if len(display_tokens) == 1:
+        return display_tokens[0]
+    return f"({' '.join(display_tokens)})"
+
+
+def _describe_syllables(pronunciation: Pronunciation) -> str:
+    syllables = syllabify(pronunciation.phonemes)
+    parts: list[str] = []
+    for syllable in syllables:
+        onset = _format_cluster(syllable.onset)
+        vowel = strip_stress(syllable.vowel)
+        coda = _format_cluster(syllable.coda)
+        parts.append(f"{onset}-{vowel}[{syllable.stress}]/{coda}")
+    return " | ".join(parts)
 
 
 if __name__ == "__main__":  # pragma: no cover

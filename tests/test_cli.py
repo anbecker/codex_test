@@ -62,3 +62,56 @@ def test_default_database_path_uses_xdg_data_home(monkeypatch, tmp_path):
     resolved = cli._default_database_path()
     expected = tmp_path / "xdg" / "poetry_assistant" / "poetry_assistant.db"
     assert resolved == expected
+
+
+def test_word_command_prints_syllables(sample_db, capsys):
+    cli.main(["--database", str(sample_db.path), "word", "spider"])
+    captured = capsys.readouterr().out
+    assert "syllabified:" in captured
+    assert "(S P)-AY[1]/ | D-ER[0]/" in captured
+
+
+def test_word_command_formats_complex_clusters(sample_db, capsys):
+    cli.main(["--database", str(sample_db.path), "word", "amazing"])
+    captured = capsys.readouterr().out
+    assert "-AH[0]/ | M-EY[1]/ | Z-IH[0]/NG" in captured
+
+
+def test_rhymes_with_all_disables_limit(monkeypatch, sample_db):
+    captured: dict[str, object] = {}
+
+    def fake_suggest(self, line, max_syllables=3, max_results=20, **kwargs):
+        captured["max_results"] = max_results
+        return {}
+
+    monkeypatch.setattr(cli.RhymeAssistant, "suggest_rhymes", fake_suggest)
+
+    cli.main([
+        "--database",
+        str(sample_db.path),
+        "rhymes-with",
+        "--all",
+        "The curious cat",
+    ])
+
+    assert captured.get("max_results") is None
+
+
+def test_perfect_rhyme_all_disables_limit(monkeypatch, sample_db):
+    captured: dict[str, object] = {}
+
+    def fake_perfect(self, word, max_results=25, **kwargs):
+        captured["max_results"] = max_results
+        return {}
+
+    monkeypatch.setattr(cli.RhymeAssistant, "perfect_rhymes", fake_perfect)
+
+    cli.main([
+        "--database",
+        str(sample_db.path),
+        "perfect-rhyme",
+        "--all",
+        "amazing",
+    ])
+
+    assert captured.get("max_results") is None

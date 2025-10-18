@@ -4,7 +4,7 @@ from __future__ import annotations
 import fnmatch
 import re
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence, Set, Tuple
 
 from .database import PoetryDatabase
 from .models import SearchResult
@@ -116,6 +116,43 @@ class SearchEngine:
                 break
         results.sort(key=self._result_sort_key)
         limit = options.limit
+        limited = results if limit is None else results[:limit]
+        self._attach_definitions(limited)
+        return limited
+
+    def perfect_rhyme_matches(
+        self,
+        key: str,
+        *,
+        part_of_speech: Optional[str] = None,
+        limit: Optional[int] = 50,
+        exclude_word_ids: Optional[Iterable[int]] = None,
+    ) -> List[SearchResult]:
+        """Return pronunciations whose perfect rhyme key matches ``key``."""
+
+        excluded: Set[int] = set(exclude_word_ids or [])
+        rows = self.db.iter_pronunciations(part_of_speech=part_of_speech)
+        results: List[SearchResult] = []
+        for row in rows:
+            word_id = int(row["word_id"])
+            if word_id in excluded:
+                continue
+            pronunciation = Pronunciation(tuple(row["pronunciation"].split()))
+            if pronunciation.perfect_rhyme_key() != key:
+                continue
+            result = SearchResult(
+                word_id=word_id,
+                word=row["word"],
+                pronunciation=row["pronunciation"],
+                syllable_count=row["syllable_count"],
+                stress_pattern=row["stress_pattern"],
+                similarity=1.0,
+                terminal_vowels=row["terminal_vowels"],
+                terminal_consonants=row["terminal_consonants"],
+                rhyme_key=row["rhyme_key_1"],
+            )
+            results.append(result)
+        results.sort(key=self._result_sort_key)
         limited = results if limit is None else results[:limit]
         self._attach_definitions(limited)
         return limited

@@ -61,6 +61,20 @@ class Pronunciation:
         start = indices[-syllables]
         return " ".join(self.phonemes[start:])
 
+    def perfect_rhyme_key(self) -> Optional[str]:
+        """Return substring covering the final stressed syllable and any trailing syllables."""
+
+        last_primary: Optional[int] = None
+        for index, phoneme in enumerate(self.phonemes):
+            if not is_vowel(phoneme):
+                continue
+            stress = phoneme[-1] if phoneme[-1].isdigit() else "0"
+            if stress == "1":
+                last_primary = index
+        if last_primary is None:
+            return None
+        return " ".join(self.phonemes[last_primary:])
+
     def terminal_vowels(self, syllables: int = 1) -> Optional[str]:
         """Return the vowel portion of the final syllables."""
 

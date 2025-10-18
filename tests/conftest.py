@@ -41,6 +41,10 @@ def sample_db(tmp_path):
             "pronunciations": ["AH0 M EY1 Z IH0 NG"],
             "definitions": [("adjective", "causing great surprise", ["astonishing"])],
         },
+        "blazing": {
+            "pronunciations": ["B L EY1 Z IH0 NG"],
+            "definitions": [("adjective", "burning brightly", ["flaming"])],
+        },
     }
 
     for word, details in data.items():

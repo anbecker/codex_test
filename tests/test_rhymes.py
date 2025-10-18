@@ -10,5 +10,27 @@ def test_rhyme_assistant(sample_db):
     keys = list(results.keys())
     assert keys == sorted(keys, reverse=True)
     assert 1 in results
-    assert any("bat" in suggestion for suggestion in results[1])
+    assert any(match.word == "bat" for match in results[1])
+
+
+def test_perfect_rhyme(sample_db):
+    assistant = RhymeAssistant(sample_db)
+    suggestions = assistant.perfect_rhymes("amazing", max_results=5)
+    assert "AH0 M EY1 Z IH0 NG" in suggestions
+    matches = suggestions["AH0 M EY1 Z IH0 NG"]
+    assert any(match.word == "blazing" for match in matches)
+    assert all(match.word != "amazing" for match in matches)
+
+
+def test_rhyme_assistant_unbounded_results(sample_db):
+    assistant = RhymeAssistant(sample_db)
+    results = assistant.suggest_rhymes("The curious cat", max_results=None)
+    assert results
+    assert any(matches for matches in results.values())
+
+
+def test_perfect_rhyme_unbounded_results(sample_db):
+    assistant = RhymeAssistant(sample_db)
+    suggestions = assistant.perfect_rhymes("amazing", max_results=None)
+    assert suggestions["AH0 M EY1 Z IH0 NG"]
 
